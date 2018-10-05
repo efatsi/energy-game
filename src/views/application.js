@@ -1,15 +1,34 @@
 import React from 'react'
-import NodeView from './node'
+import ElementView from './element'
 
-class Node {
-  constructor(energy, active = false) {
+class Element {
+  constructor(type, id, energy) {
+    this.type   = type
+    this.id     = id
     this.energy = energy
-    this.active = active
-    this.recipients = []
+
+    this.recipient = null
   }
 
   setRecipient(node) {
-    this.recipients.push(node)
+    this.recipient = node
+  }
+
+  discharge() {
+    this.energy -= 1
+    this.recipient.energy += 1
+  }
+}
+
+class Node extends Element {
+  constructor(id, energy = 0, active = false) {
+    super("node", id, energy)
+
+    this.active = active
+  }
+
+  open() {
+    return true
   }
 
   tick() {
@@ -17,12 +36,8 @@ class Node {
       this.active = false
     }
 
-    if (this.active) {
-      this.energy -= 1
-
-      this.recipients.forEach(recipient => {
-        recipient.energy += 1 / this.recipients.length
-      })
+    if (this.active && this.recipient.open()) {
+      this.discharge()
     }
   }
 
@@ -31,26 +46,57 @@ class Node {
   }
 }
 
+class Wire extends Element {
+  constructor(id, energy = 0) {
+    super("wire", id, energy)
+
+    this.charge = 0
+    this.chargeLimit = 100
+  }
+
+  open() {
+    return this.charge == 0
+  }
+
+  tick() {
+    if (this.energy > 0) {
+      this.charge += 1
+
+      if (this.charge >= this.chargeLimit) {
+        this.discharge()
+        this.charge = 0
+      }
+    }
+  }
+}
+
 class Application extends React.Component {
   constructor(props) {
     super(props)
 
-    let node1 = new Node(10, -1)
-    let node2 = new Node(0)
-    let node3 = new Node(12)
+    let node1 = new Node(1, 10, false)
+    let node2 = new Node(2)
+    let node3 = new Node(3)
 
-    node1.setRecipient(node2)
-    node2.setRecipient(node3)
+    let wire1 = new Wire(1, 0, true)
+    let wire2 = new Wire(2, 0, true)
+
+    node1.setRecipient(wire1)
+    wire1.setRecipient(node2)
+    node2.setRecipient(wire2)
+    wire2.setRecipient(node3)
+
+    // devmode - circle it all back
     node3.setRecipient(node1)
 
-    this.nodes = [node1, node2, node3]
+    this.elements = [node1, wire1, node2, wire2, node3]
   }
 
   componentDidMount() {
     setInterval(() => {
-      this.nodes.forEach(node => node.tick())
+      this.elements.forEach(element => element.tick())
       this.forceUpdate()
-    }, 300)
+    }, 10)
   }
 
   render() {
@@ -58,20 +104,22 @@ class Application extends React.Component {
       <main>
         <h1>Energy Prototype</h1>
 
-        {this.renderNodes()}
+        {this.renderElements()}
       </main>
     )
   }
 
-  renderNodes() {
-    return this.nodes.map((node, i) => {
+  renderElements() {
+    return this.elements.map((element, i) => {
       return (
-        <NodeView
+        <ElementView
           key={i}
-          id={i}
-          active={node.active}
-          onClick={() => node.toggle()}
-          energy={node.energy}
+          id={element.id}
+          type={element.type}
+          active={element.active}
+          onClick={() => element.toggle()}
+          energy={element.energy}
+          element={element}
         />
       )
     })
