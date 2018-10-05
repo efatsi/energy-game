@@ -1,0 +1,21 @@
+# Browsers that we support. This informs autoprefixer and
+# babel-preset-env, which apply code transformations to ensure CSS and
+# JavaScript can run in our target environments
+#
+# Please ensure that these settings are consistent with support contracts
+#
+# Also see:
+# https://caniuse.com/usage-table
+
+# Firefox extended support release
+# https://www.mozilla.org/en-US/firefox/organizations/
+Firefox ESR
+
+# This is the last version of Chrome supported by Windows XP/Vista
+Chrome >= 49
+
+# IE10 usage is reasonably high enough, and supporting it is easy
+# enough, that we just do it anyway
+IE >= 10
+
+Safari >= 9
